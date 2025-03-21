@@ -36,7 +36,7 @@ CoreTempAI/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/CoreTempAI.git
+   git clone https://github.com/vejendsh/CoreTempAI.git
    cd CoreTempAI
    ```
 
@@ -89,6 +89,6 @@ If you use this project in your research, please cite:
   title = {CoreTempAI: Physics-based Machine Learning for Core Body Temperature Prediction},
   year = {2024},
   publisher = {GitHub},
-  url = {https://github.com/yourusername/CoreTempAI}
+  url = {https://github.com/vejendsh/CoreTempAI.git}
 }
 ``` 
