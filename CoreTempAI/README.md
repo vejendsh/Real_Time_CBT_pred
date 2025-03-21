@@ -29,6 +29,15 @@ This package provides the core functionality for temperature prediction using ph
 - `utils/`: Utility functions
   - `utils.py`: General utility functions
 
+## Data and Simulation Files
+
+- **Simulation Case File**: Located at `./cases/exercise/with_sweating/case_1/Case1.cas.h5`
+- **User-Defined Functions**: Located at `./cases/exercise/with_sweating/case_1/UDF.c`
+- **Raw Data Storage**: All generated simulation data is stored in `./data/raw`
+- **Trained Models**: Previously trained models can be found in `./data/models`
+  - Neural network models: `./data/models/neural_network`
+  - Neural operator models: `./data/models/neural_operator`
+
 ## Package Components
 
 ### Input Parameters (`input_parameters/`)
@@ -55,7 +64,7 @@ Parameters can be customized by modifying values within their defined ranges, wh
 - Simulation monitoring and validation
 - Implementation available in `data_generator.py`, `set_params.py`, and `run_case.py`
 
-The training data is generated using Ansys Fluent, a computational fluid dynamics (CFD) solver. The `data_generator.py` script automates the process of running multiple simulations with different input parameters to generate a dataset for training the models. This enables rapid creation of synthetic training data without the need for expensive experimental setups.
+The training data is generated using Ansys Fluent, a computational fluid dynamics (CFD) solver. The `data_generator.py` script automates the process of running multiple simulations with different input parameters to generate a dataset for training the models. This enables rapid creation of synthetic training data without the need for expensive experimental setups. The simulations use the case file `Case1.cas.h5` and user-defined functions in `UDF.c` located in the `cases/exercise/with_sweating/case_1/` directory, which contains the physics-based model for temperature prediction.
 
 #### Data Aggregation (`data_aggregation/`)
 - Unified system for collecting and organizing data from multiple simulation runs
@@ -63,11 +72,15 @@ The training data is generated using Ansys Fluent, a computational fluid dynamic
 - Cache mechanism for faster data access
 - Utilities for selecting and filtering runs
 
+The data aggregation system collects raw outputs from numerous simulation runs and organizes them into a unified structure suitable for further processing. The caching mechanism dramatically reduces load times for repeated processing tasks, while the run selection utilities allow researchers to focus on specific subsets of data for specialized training scenarios.
+
 #### Data Preprocessing (`data_preprocessing/`)
 - Converts aggregated data into training-ready formats
 - Supports both neural network and neural operator models
 - Features for normalization, FFT transformation, and data splitting
 - Specialized processors for different model architectures
+
+The preprocessing system transforms raw simulation data into optimized formats for different model architectures. The normalization features ensure consistent scale across parameters, while the FFT transformation extracts frequency domain features when needed. The preprocessing pipeline is configurable and can be adapted to the requirements of different model architectures.
 
 ### Models
 
@@ -75,6 +88,8 @@ The training data is generated using Ansys Fluent, a computational fluid dynamic
 - Standard feedforward neural network for temperature prediction
 - Flexible architecture that adapts to input parameters
 - Support for custom hidden layer configurations
+
+The neural network model provides a standard feedforward architecture that can process scalar inputs to predict temperature profiles. The network automatically adapts its architecture based on the input dimensions defined in the metadata, allowing for a flexible approach that can handle different parameter configurations without manual intervention.
 
 #### Neural Operator (`model/neural_operator_model.py`)
 - Advanced operator-based architecture for spatiotemporal predictions
@@ -93,8 +108,9 @@ The neural operator model extends beyond traditional neural networks by incorpor
 #### Neural Operator Training (`neural_operator_training.py`)
 - Specialized training utilities for operator-based models
 - Advanced optimization strategies with gradient accumulation
-- Customizable training configurations via NeuralOperatorConfig 
+- Customizable training configurations via NeuralOperatorConfig
 
+The training modules provide complete workflows for model training, evaluation, and visualization. They include features like learning rate scheduling, early stopping, and model checkpointing to ensure optimal training outcomes. The training pipelines are integrated with the data preprocessing system for seamless data flow from raw simulation outputs to trained models. Both training modules support experiment tracking through Weights & Biases integration.
 
 ## Workflow
 
@@ -108,7 +124,7 @@ The complete workflow consists of five main steps:
 
 ## Usage Example
 
-The `example_usage.py` and 'test_data_pipeline.py' file demonstrates how to use the CoreTempAI data pipeline:
+The `example_usage.py` file demonstrates how to use the CoreTempAI data pipeline:
 
 ```python
 from CoreTempAI.data_aggregation import DataAggregator
