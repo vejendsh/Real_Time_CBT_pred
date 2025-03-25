@@ -84,10 +84,10 @@ This project is licensed under the MIT License. See the LICENSE file for details
 If you use this project in your research, please cite:
 
 ```bibtex
-@software{CoreTempAI2024,
+@software{CoreTempAI2025,
   author = {Vejendla, Sai Yeshwanth},
-  title = {CoreTempAI: Physics-based Machine Learning for Core Body Temperature Prediction},
-  year = {2024},
+  title = {CoreTempAI: Physics-based Machine Learning for real-time human Core Body Temperature Prediction},
+  year = {2025},
   publisher = {GitHub},
   url = {https://github.com/vejendsh/CoreTempAI.git}
 }
