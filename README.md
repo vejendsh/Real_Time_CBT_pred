@@ -4,7 +4,7 @@ A physics-based machine learning framework for predicting core body temperature 
 
 ## Overview
 
-CoreTempAI combines state-of-the-art machine learning techniques with physics-based simulations to provide accurate predictions of core body temperature. The project leverages both traditional neural networks and advanced transformer-based architectures (neural operators) to process various input parameters including both scalar values and temporal profiles.
+CoreTempAI combines state-of-the-art machine learning techniques with physics-based simulations (CFD) to provide accurate predictions of core body temperature. The project leverages both traditional neural networks and advanced transformer-based architectures (neural operators) to process various input parameters including both scalar values and temporal profiles.
 
 ## Project Structure
 

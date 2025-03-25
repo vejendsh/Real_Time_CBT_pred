@@ -1,10 +1,10 @@
 # CoreTempAI Package Documentation
 
-This package provides the core functionality for temperature prediction using physics-based neural network and operator architectures.
+This package provides the core functionality for real-time prediction of human core-body temperature using CFD-data-trained neural networks and neural operators.
 
 ## Project Structure
 
-- `config.py`: Configuration parameters for models and simulations
+- `config.py`: Configuration parameters for models and CFD simulations
 - `example_usage.py`: Example script demonstrating the full data pipeline
 - `model/`: Neural network model implementations
   - `neural_network_model.py`: Standard neural network model
@@ -20,7 +20,7 @@ This package provides the core functionality for temperature prediction using ph
   - `aggregator_base.py`: Base class for all aggregators
   - `default_aggregator.py`: Standard data aggregation
   - `custom_aggregator.py`: Custom data format handling
-- `data_generation/`: Utilities for generating training data using Ansys Fluent
+- `data_generation/`: Utilities for generating training data using Ansys Fluent CFD solver
   - `data_generator.py`: Script for generating simulation data
   - `set_params.py`: Parameter configuration utilities
   - `run_case.py`: Simulation execution utilities
