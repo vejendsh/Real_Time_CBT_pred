@@ -139,15 +139,17 @@ vbody_muscle = PRF_GRSUM1(vbody_muscle);
 vbody_head = PRF_GRSUM1(vbody_head);
 vbody= PRF_GRSUM1(vbody);
 
-   wavg_perf=(perfhead*vbody_head+perforgan*vbody_organ+perfmuscle*vbody_muscle)/vbody;
-   wavg_tisstemp=((sum_tisstemph+sum_tisstempo+sum_tisstempm)/(wavg_perf*vbody)) -273.15;
-   core_temp=(sum_tisstempo/(vbody_organ*perforgan)) -273.15;
-   core_tempa=core_temp;
-   avg_tisstemp=(sum_tisstemp/vbody) - 273.15;
+wavg_perf=(perfhead*vbody_head+perforgan*vbody_organ+perfmuscle*vbody_muscle)/vbody;
+wavg_tisstemp=((sum_tisstemph+sum_tisstempo+sum_tisstempm)/(wavg_perf*vbody)) -273.15;
+core_temp=(sum_tisstempo/(vbody_organ*perforgan)) -273.15;
+core_tempa=core_temp;
+avg_tisstemp=(sum_tisstemp/vbody) - 273.15;
 
-   Message("wavg_perf: %g\n",wavg_perf);
-   Message("avg_tisstemp: %g, core_temp: %g, wavg_tisstemp: %g\n",avg_tisstemp,core_temp,wavg_tisstemp);
-   Message("Time: %g, Iteration: %d\n", time, N_ITER);
+Message("wavg_perf: %g\n",wavg_perf);
+Message("avg_tisstemp: %g, core_temp: %g, wavg_tisstemp: %g\n",avg_tisstemp,core_temp,wavg_tisstemp);
+Message("Time: %g, Iteration: %d\n", time, N_ITER);
+
+
 if(metab_ramp_time>time)
 {
 perfmuscle=(time*0.000010408)+0.0005;
@@ -167,26 +169,26 @@ metabmuscle= 4010.07;
 }
 
 
-  //  Message("Metabolic rate: %g\n",metabmuscle);
-  //  Message("Perfusion: %g\n",perfmuscle);
-  //  Message("Internal Core: %g\n",core_tempa);
-  //  Message("Time: %g\n",time);
+   Message("Metabolic rate: %g\n",metabmuscle);
+   Message("Perfusion: %g\n",perfmuscle);
+   Message("Internal Core: %g\n",core_tempa);
+   Message("Time: %g\n",time);
 
 /*Extaraction of old blood temperature, saving of wtd avg tissue temp*/
 
- thread_loop_c(t,d)
- {
-   begin_c_loop(c,t)
-   {
-     C_UDMI(c,t,0) = 310.15;
-     tblood_p=C_UDMI(c,t,0) -273.15;
-     C_UDMI(c,t,1) = wavg_tisstemp + 273.15;
-     C_UDMI(c,t,2) = avg_tisstemp + 273.15;
-     C_UDMI(c,t,3) = core_temp + 273.15;
-     C_UDMI(c,t,4) = sweatingcal;
-   }
-   end_c_loop(c,t)
- }
+thread_loop_c(t,d)
+{
+  begin_c_loop(c,t)
+  {
+    C_UDMI(c,t,0) = 310.15;
+    tblood_p=C_UDMI(c,t,0) -273.15;
+    C_UDMI(c,t,1) = wavg_tisstemp + 273.15;
+    C_UDMI(c,t,2) = avg_tisstemp + 273.15;
+    C_UDMI(c,t,3) = core_temp + 273.15;
+    C_UDMI(c,t,4) = sweatingcal;
+  }
+  end_c_loop(c,t)
+}
   //  Message("wavg_perf: %g\n",wavg_perf);
   //  Message("avg_tisstemp: %g, core_temp: %g, wavg_tisstemp: %g\n",avg_tisstemp,core_temp,wavg_tisstemp);
 
@@ -242,8 +244,8 @@ begin_f_loop(f,t)
 {
 
 tskin = F_T(f,t) - 273.15;
-   Message("F_t: %g\n",F_T(f,t));
-   Message("t_skin: %g\n",tskin);
+  //  Message("F_t: %g\n",F_T(f,t));
+  //  Message("t_skin: %g\n",tskin);
 
 convection = heattransfercoefficient*(ambienttemperature-tskin);
 
@@ -278,7 +280,7 @@ sweating=0;
 
 
 F_PROFILE(f,t,i) = convection+sweating;
-   Message("conv+sweat: %g\n", F_PROFILE(f,t,i) );
+  //  Message("conv+sweat: %g\n", F_PROFILE(f,t,i) );
 
 }
 

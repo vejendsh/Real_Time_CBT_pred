@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: coretempai
+Version: 0.1.0
+Summary: CoreTempAI package for computational fluid dynamics temperature prediction
+Author: 
+Author-email: 
+Requires-Python: >=3.7
+License-File: LICENSE
+Dynamic: license-file
+Dynamic: requires-python
+Dynamic: summary
