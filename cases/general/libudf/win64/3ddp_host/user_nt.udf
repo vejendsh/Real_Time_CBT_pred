@@ -1,4 +1,4 @@
-CSOURCES= $(SRC)UDF.c
+CSOURCES= $(SRC)UDF_st_indep.c
 HSOURCES=
 VERSION=3ddp_host
 PARALLEL_NODE=none

@@ -346,7 +346,7 @@ real timeh=300;
 real time;
 real percentage;
 time=CURRENT_TIME;
-begin_f_loop(f,t)
+
 
 if (time>0.0) // Transient conditions
 {
@@ -358,6 +358,9 @@ else // Initial steady state conditions
   heattransfercoefficient= heattransfercoefficient_initial;
   ambienttemperature= ambienttemperature_initial;
 }
+
+
+begin_f_loop(f,t)
 
 {
 

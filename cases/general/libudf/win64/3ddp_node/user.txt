@@ -1,6 +1,6 @@
 VERSION='3ddp_node'
 FLUENT_ARCH='win64'
 FLUENT_RELEASE='fluent24.2.0'
-CSOURCES=' $(SRC)UDF.c'
+CSOURCES=' $(SRC)UDF_st_indep.c'
 HSOURCES=''
 GPU_SUPPORT='off'
