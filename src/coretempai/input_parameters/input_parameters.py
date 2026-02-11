@@ -27,23 +27,16 @@
 
  # Do not forget comma when adding a new parameter 
 
-initial_scalar_params = {
-    "h": [1, 8, "W/m^2/K"],
-    "T_amb": [20, 26, "C"],
-}
 
 initial_profile_params = {
-    "HR": [40, 100, "min^-1"]
-}
-
-scalar_params = {
-    "h": [1, 50, "W/m^2/K"],
-    "T_amb": [20, 50, "C"],
+    "HR": [40, 100, "min^-1"],
+    "ST": [30, 40, "K"]
 }
 
 # Define profile parameters for the simulation
 # These parameters can vary over time during the simulation
 profile_params = {
-"HR": [40, 180, "min^-1"]             # Heart rate profile
+    "HR": [40, 180, "min^-1"],             # Heart rate profile
+    "ST": [30, 40, "K"]
 }
 
