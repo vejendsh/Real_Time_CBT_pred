@@ -6,12 +6,13 @@ then injects them into the UDF.c file.
 
 
 import numpy as np
+from numpy.random import noncentral_f
 from coretempai.config import SIMULATION_CONFIG, PROFILE_CONFIG
 from coretempai.utils.utils import Fourier
 import coretempai.input_parameters.input_parameters as input_parameters
 
 
-def generate_profile(max_waves, duration, step_size, range, initial_range=None):
+def generate_profile(max_waves, duration, step_size, range, initial_range=None, initial_value=None):
     """
     Generates a random HR profile using Fourier sampler.
     
@@ -19,8 +20,7 @@ def generate_profile(max_waves, duration, step_size, range, initial_range=None):
         max_waves (int): Maximum number of Fourier waves (max frequency)
         duration (float): Duration of the profile in seconds
         step_size (float): Time step size in seconds
-        hr_range (list): [min, max] range for HR values in min^-1
-        initial_hr_range (list): [min, max] range for initial HR values in min^-1
+        range (list): [min, max] range for HR values in min^-1
     Returns:
         numpy.ndarray: Array of HR values with length = (duration / step_size) + 1
     """
@@ -38,15 +38,7 @@ def generate_profile(max_waves, duration, step_size, range, initial_range=None):
     # Generate a random profile within the specified range
     # n=1 means generate 1 profile, max_freq=max_waves, range=hr_range
 
-    profile_values = np.zeros(shape=(1,1))
-    i=0
-
-    if initial_range:
-        while not (initial_range[0] <= profile_values[0] <= initial_range[1]):
-            profile_values = sampler.sample(1, max_freq=max_waves, range=range, initial_range=initial_range)[0]
-            i=i+1
-    profile_values = sampler.sample(1, max_freq=max_waves, range=range, initial_range=initial_range)[0]
-    print(f"Took {i} attempt(s) to generate the required HR profile")
+    profile_values = sampler.sample(1, max_freq=max_waves, range=range, initial_range=initial_range, initial_value=initial_value)[0]
 
 
     return profile_values
@@ -79,9 +71,9 @@ def format_st_array_c(st_array):
         str: C array string like "real skintemp[3601]={60.5,61.2,...};"
     """
     # Format each value with appropriate precision
-    hr_values_str = ",".join([f"{val:.4f}" for val in st_array])
+    st_values_str = ",".join([f"{val:.4f}" for val in st_array])
     array_size = len(st_array)
-    return f"real skintemp[{array_size}]={{{hr_values_str}}};"
+    return f"real skintemp[{array_size}]={{{st_values_str}}};"
 
 
 def format_time_array_c(time_array):
@@ -138,16 +130,8 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     # Use DOTALL flag to allow . to match newlines across multiple lines
     content = re.sub(pattern_hr, replacement_hr, content, flags=re.DOTALL)
     
-    # Pattern 2: Replace heartrateinitial with first value from HR array
-    # Matches: #define heartrateinitial <any_value>
-    hr_initial = hr_array[0]  # Get first value from HR array
-    pattern_hr_initial = r'#define\s+heartrateinitial\s+[\d.]+'
-    replacement_hr_initial = f'#define heartrateinitial {hr_initial:.2f}'
-    if not re.search(pattern_hr_initial, content):
-        raise ValueError(f"Pattern '#define heartrateinitial' not found in {udf_path}")
-    content = re.sub(pattern_hr_initial, replacement_hr_initial, content)
-    
-    # Pattern 3: Replace inputtime array
+
+    # Pattern 2: Replace inputtime array
     # Matches: real inputtime[<any_size>]={<any_values>};
     # This pattern handles both single-line and multi-line arrays
     pattern_inputtime = r'real\s+inputtime\[\d+\]\s*=\s*\{.*?\};'
@@ -174,7 +158,6 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     print(f"  - HR profile array size: {len(hr_array)}")
     print(f"  - ST profile array size: {len(st_array)}")
     print(f"  - Time points array size: {len(time_points)}")
-    print(f"  - Heart rate initial: {hr_initial:.2f} min^-1")
 
 
 def set_transient_params(udf_path, profile_params, initial_profile_params, max_waves=5, 
@@ -184,11 +167,11 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_w
     
     Args:
         udf_path (str): Path to UDF.c file
-        initial_profile_params (dict): Dictionary of initial profile parameter ranges
         profile_params (dict): Dictionary of profile parameter ranges
-        max_waves (int): Maximum number of Fourier waves for HR profile
-        duration (float, optional): Profile duration in seconds. Defaults to TRANSIENT_CONFIG.
-        step_size (float, optional): Step size in seconds. Defaults to TRANSIENT_CONFIG.
+        initial_profile_params (dict): Dictionary of initial profile parameter ranges
+        max_waves (int): Maximum number of Fourier waves for profiles
+        duration (float, optional): Profile duration in seconds. Defaults to PROFILE_CONFIG.
+        step_size (float, optional): Step size in seconds. Defaults to PROFILE_CONFIG.
         
     Returns:
         dict: Dictionary containing generated parameter values
@@ -205,13 +188,13 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_w
     
     # Generate HR profile
     hr_range = profile_params.get("HR", [60, 120])  # Default range if not specified
-    initial_hr_range = initial_profile_params.get("HR", [40, 100])
+    initial_hr_range = initial_profile_params.get("HR", [60, 100])  # Default range if not specified
     hr_array = generate_profile(max_waves, duration, step_size, hr_range[:2], initial_hr_range[:2])  # Get [min, max]
 
     # Generate ST profile
     st_range = profile_params.get("ST", [30, 40])  # Default range if not specified
     # initial_st_range = initial_profile_params.get("ST", [30, 40])
-    st_array = generate_profile(max_waves, duration, step_size, st_range[:2])  # Get [min, max]
+    st_array = generate_profile(max_waves, duration, step_size, st_range[:2], initial_value=33.5)  # Get [min, max]
     
     # Ensure time_points and hr_array have the same length
     if len(time_points) != len(hr_array):
@@ -241,13 +224,12 @@ def main():
     # Get parameters from input_parameters module
     profile_params = input_parameters.profile_params
     initial_profile_params = input_parameters.initial_profile_params
-    
     # Set transient parameters
     result = set_transient_params(
         udf_path=udf_path,
         profile_params=profile_params,
         initial_profile_params=initial_profile_params,
-        max_waves=PROFILE_CONFIG["max_fourier_waves"]
+        max_waves=PROFILE_CONFIG["max_freq"]
     )
     
     print("\nGenerated parameters:")
@@ -257,15 +239,18 @@ def main():
     from matplotlib import pyplot as plt
     fig, axs = plt.subplots(2, 1, figsize=(8,6), sharex=True)
     axs[0].plot(np.arange(0, len(result['hr_profile'])) * PROFILE_CONFIG["step_size"], result['hr_profile'], label='HR profile')
-    axs[0].set_ylabel('HR (min^-1)')
-    # plt.ylim((profile_params.get("HR")[0], profile_params.get("HR")[1]))
+    axs[0].set_ylabel('HR (bpm)')
+    axs[0].set_ylim((profile_params.get("HR")[0], profile_params.get("HR")[1]))
+    # axs[0].set_ylim(-200, 200)
     axs[0].set_title('HR Profile')
-    axs[0].legend()
+    axs[0].legend() 
     axs[0].grid(True)
 
     axs[1].plot(np.arange(0, len(result['st_profile'])) * PROFILE_CONFIG["step_size"], result['st_profile'], label='ST profile')
     axs[1].set_ylabel('ST (K)')
     axs[1].set_xlabel('Time (s)')
+    axs[1].set_ylim((profile_params.get("ST")[0], profile_params.get("ST")[1]))
+    # axs[1].set_ylim(-200, 200)
     axs[1].set_title('ST Profile')
     axs[1].grid(True)
     axs[1].legend()

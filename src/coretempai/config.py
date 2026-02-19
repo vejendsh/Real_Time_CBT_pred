@@ -31,14 +31,12 @@ FILES = {
 PROFILE_CONFIG = {
     "step_size": 2,   # Step size in seconds (2 seconds)
     "profile_duration": 7200,  # Duration in seconds (2 hours)
-    "max_fourier_waves": 25,  # Maximum number of Fourier waves for HR profile
+    "max_freq": 26,  # Maximum number of Fourier waves for HR profile
+    "scale_factor": 0.6,
+    "margin": 0.95,
+    "mean_margin": 0.25,
 }
 
-# Fourier sampler settings
-FOURIER_CONFIG = {
-    "max_freq": 10,       # Maximum frequency for Fourier sampler
-    "nu_range": [0, 1],   # Default range for normalized values
-}
 
 # Simulation parameters
 SIMULATION_CONFIG = {

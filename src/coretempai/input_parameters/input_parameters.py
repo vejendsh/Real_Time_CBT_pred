@@ -27,16 +27,14 @@
 
  # Do not forget comma when adding a new parameter 
 
-
 initial_profile_params = {
-    "HR": [40, 100, "min^-1"],
-    "ST": [30, 40, "K"]
+    "HR": [60, 100, "bpm"],
 }
 
 # Define profile parameters for the simulation
 # These parameters can vary over time during the simulation
 profile_params = {
-    "HR": [40, 180, "min^-1"],             # Heart rate profile
+    "HR": [60, 180, "bpm"],             # Heart rate profile
     "ST": [30, 40, "K"]
 }
 

@@ -8,7 +8,7 @@ import csv
 import matplotlib.pyplot as plt
 
 # Import config here to avoid circular imports
-from coretempai.config import DIRECTORIES, PROFILE_CONFIG, FOURIER_CONFIG
+from coretempai.config import DIRECTORIES, PROFILE_CONFIG
 
 
 # Function to save tensor data to a file
@@ -102,7 +102,7 @@ class Fourier(FunctionSampler):
         super().__init__(x)
         self.nx = len(self.x)
 
-    def sample(self, n, max_freq=None, range=None, initial_range=None, margin=0.95):
+    def sample(self, n, max_freq, range, initial_range=None, initial_value=None):
         """
         Sample random Fourier-series profiles.
 
@@ -112,74 +112,97 @@ class Fourier(FunctionSampler):
         - If `initial_range` is provided, only the first value of each profile is constrained to be
           within `initial_range` while the rest of the profile remains within `range`.
         """
-        # Use default values if not provided
-        if max_freq is None:
 
-            max_freq = FOURIER_CONFIG["max_freq"]
-        if range is None:
 
-            range = FOURIER_CONFIG["nu_range"]
-
-        if margin is None:
-            margin = 0.95
-        if not (0 < float(margin) <= 1.0):
-            raise ValueError(f"margin must be in (0, 1], got {margin!r}")
-
-        if range is None or len(range) != 2:
-            raise ValueError(f"range must be a 2-length sequence [low, high], got {range!r}")
         low, high = float(range[0]), float(range[1])
-        if not (low < high):
-            raise ValueError(f"range must satisfy low < high, got {range!r}")
 
-        if initial_range is not None:
-            if len(initial_range) != 2:
-                raise ValueError(
-                    f"initial_range must be a 2-length sequence [low, high], got {initial_range!r}"
-                )
-            i_low, i_high = float(initial_range[0]), float(initial_range[1])
-            if not (i_low < i_high):
-                raise ValueError(f"initial_range must satisfy low < high, got {initial_range!r}")
-            if not (low <= i_low and i_high <= high):
-                raise ValueError(
-                    f"initial_range must be within range; got initial_range={initial_range!r}, range={range!r}"
-                )
-        else:
-            i_low, i_high = low, high
+        functions, num_terms = self.generate_functions(n, max_freq)
+        functions = self.scale_functions(functions, low, high, initial_value)
+        i=1
 
+        if initial_range:
+            while not  (initial_range[0] <= functions[0][0] <= initial_range[1]):
+                functions = self.generate_functions(n, max_freq, num_terms)[0]
+                functions = self.scale_functions(functions, low, high)
+                i+=1
+
+        print(f"Took {i} attempts to generate a profile within the initial range")
+
+
+
+        return functions
+
+    def generate_functions(self, n, max_freq, num_terms=None):
+        
         # Functions (n , nx) = Sum of 'max_freq' frequency components (n , nx, max_freq)
 
-        # num_terms = np.random.randint(1, max_freq+1,  size=(n, 1, 1)) 
-        num_terms = np.random.randint(max_freq-5, max_freq+1,  size=(n, 1, 1)) 
-        amp_cos = np.random.uniform(-5, 5, size=(n, 1, max_freq)) 
-        amp_sin = np.random.uniform(-5, 5, size=(n, 1, max_freq)) 
-        phase_cos = np.random.uniform(-np.pi, np.pi, size=(n, 1, max_freq)) 
-        phase_sin = np.random.uniform(-np.pi, np.pi, size=(n, 1, max_freq)) 
+        # freq = np.arange(0, max_freq+1, 1).reshape(-1, 1) # (max_freq+1, 1)
+        # freq = np.sort(np.random.uniform(0, max_freq, size=(max_freq, 1)), axis=0)
+        # Sample floor(max_freq/2) frequencies from 0 to 1, and the rest from 1 to max_freq, then sort
+        # n_low = int(np.floor(max_freq / 2))
 
-        freq = np.arange(1, max_freq+1, 1).reshape(-1, 1) # (max_freq, 1)
+        n_low = 1
+        n_high = max_freq - n_low
 
-        functions_cos = np.real(amp_cos*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq).T, 0) + phase_cos)))) # (n, nx, max_freq)
-        functions_sin = np.real(amp_sin*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq).T, 0) + phase_sin)))) 
+        freq_low = np.random.uniform(0, 1, size=(n_low, 1))
+        # One frequency per bucket [1,2), [2,3), ..., [n_high, n_high+1)
+        freq_high = np.random.uniform(1 + np.arange(n_high), 2 + np.arange(n_high), size=n_high).reshape(-1, 1)
+        freq = np.sort(np.vstack([freq_low, freq_high]), axis=0)
+        # print(f"Freq: {freq}")
+
+
+        if num_terms is None:
+            num_terms = np.random.randint(1, n_high+1,  size=(n, 1, 1)) 
+
+        # num_terms = 0
+        print(f"Num terms: {num_terms}")
+
+        amp_cos_low = np.random.uniform(5*num_terms, 5*num_terms+1, size=(n, 1, n_low)) 
+        amp_cos_high = np.random.uniform(0, 10, size=(n, 1, n_high)) 
+        amp_sin_low = np.random.uniform(5*num_terms, 5*num_terms+1, size=(n, 1, n_low)) 
+        amp_sin_high = np.random.uniform(0, 10, size=(n, 1, n_high)) 
+        phase_cos_low = np.random.uniform(-2*np.pi, 0, size=(n, 1, n_low)) 
+        phase_cos_high = np.random.uniform(-2*np.pi, 0, size=(n, 1, n_high)) 
+        phase_sin_low = np.random.uniform(-2*np.pi, 0, size=(n, 1, n_low)) 
+        phase_sin_high = np.random.uniform(-2*np.pi, 0, size=(n, 1, n_high)) 
+
+
+
+        functions_cos = np.concatenate([np.real(amp_cos_low*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq_low).T, 0) + phase_cos_low)))), np.real(amp_cos_high*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq_high).T, 0) + phase_cos_high))))], axis=-1)  # (n, nx, max_freq)
+        functions_sin = np.concatenate([np.real(amp_sin_low*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq_low).T, 0) + phase_sin_low)))), np.real(amp_sin_high*(np.e**(1j * (np.expand_dims((2 * np.pi * self.x * freq_high).T, 0) + phase_sin_high))))], axis=-1) 
         functions = functions_cos + functions_sin 
 
-        mask = np.broadcast_to(num_terms, (n, self.nx, max_freq)) >= np.broadcast_to(freq.reshape(1, 1, -1), (n, self.nx, max_freq)) 
+
+        mask = np.broadcast_to(n_low + num_terms, (n, self.nx, max_freq)) >= np.broadcast_to(np.arange(1, max_freq+1).reshape(1, 1, -1), (n, self.nx, max_freq)) 
         functions = np.sum(functions * mask, axis=-1)  # shape: (n, nx)
 
+        return functions, num_terms
+
+    def scale_functions(self, functions, low, high, initial_value=None):
+        
         # Enforce bounds by applying a per-sample affine transform about the first value.
         # This preserves the raw profile shape while ensuring all values are within [low, high],
         # and constraining the first value within [i_low, i_high].
 
+        n = functions.shape[0]
         mean = np.mean(functions, axis=1)
-        target_mean = (low + high)/2
+        mean_margin = PROFILE_CONFIG["mean_margin"]
 
-        functions = functions + target_mean - mean
+        if not initial_value:
+            target_mean = np.random.uniform(low + mean_margin*(high-low), high - mean_margin*(high-low), size=(n, 1))
+            # target_mean = (low + high)/2
+            functions = functions + target_mean - mean
+            # print(functions)
+        else:
+            functions = functions + initial_value - functions[0][0]
+            print(f"Functions: {functions}")
+            target_mean = functions[0][0]
 
-
-
-        # y0_targets = (low + high)/2
-        
-        # np.random.uniform(i_low, i_high, size=(n, 1))
+        # Detect constant profiles (no variation along x)
+        is_constant = np.ptp(functions, axis=1) < 1e-12
         
         d = functions - target_mean # deltas from first point, shape: (n, nx)
+
 
         eps = 1e-12
         pos = d > eps
@@ -194,23 +217,25 @@ class Fourier(FunctionSampler):
         np.divide((target_mean - low), (-d), out=s_neg, where=neg)
 
         s_max = np.minimum(np.min(s_pos, axis=1), np.min(s_neg, axis=1)) # shape = (n,)
-        # s_max_neg = np.min(s_neg, axis=1)
 
         s_max = np.maximum(s_max, 0.0)
-        # s_max_neg = np.maximum(s_max_neg, 0.0)
+        # When d is (nearly) zero everywhere, no division ran so s_max stays inf; avoid inf*0 -> NaN later
+        s_max = np.where(np.isinf(s_max), 1.0, s_max)
 
-        # Sample scale in [0, margin * s_max]. If s_max is 0, fall back to constant profile.
-        s_max_scaled = (margin * s_max).reshape(n, 1)
-        # s_max_scaled_neg = (margin* s_max_neg).reshape(n, 1)
+        s_max_scaled = (PROFILE_CONFIG["margin"] * s_max).reshape(n, 1)
 
-        s = np.random.uniform(0.5, 1, size=(n, 1)) * s_max_scaled
-        # s_neg = np.random.uniform(0.5, 1, size=(n, 1)) * s_max_scaled_neg
+        s = np.random.uniform(PROFILE_CONFIG["scale_factor"], 1, size=(n, 1)) * s_max_scaled
+        # print(f"S: {s/s_max_scaled}")
 
-        bounded = s*d + target_mean
-        # bounded[:, 1:] = bounded[:, 1:] + np.random.uniform(30, 50, size=(n,1))
+        scaled_functions = s*d + target_mean
 
-        # For degenerate cases (essentially constant profile), bounded is already constant=y0_targets.
-        return bounded
+        # For constant profiles, set the constant to a value uniform in [low, high]
+        if np.any(is_constant):
+            constants = np.random.uniform(low, high, size=(n,))
+            scaled_functions[is_constant, :] = constants[is_constant, np.newaxis]
+
+        return scaled_functions
+
 
 def create_run_directory():
     """
