@@ -184,21 +184,6 @@ def modify_udf_file(udf_path, hr_array, time_points, t_amb, h_coefficient, t_amb
     # Use DOTALL flag to allow . to match newlines across multiple lines
     content = re.sub(pattern_inputtime, replacement_inputtime, content, flags=re.DOTALL)
 
-    #Pattern 6: Replace heattransfercoefficient_initial
-    pattern_htc_initial = r'real\s+heattransfercoefficient_initial\s*=\s*[\d.]+;'
-    replacement_htc_initial = f'real heattransfercoefficient_initial = {h_coefficient_initial};'
-    if not re.search(pattern_htc_initial, content):
-        raise ValueError(f"Pattern 'real heattransfercoefficient_initial' not found in {udf_path}")
-    content = re.sub(pattern_htc_initial, replacement_htc_initial, content)
-    
-    #Pattern 7: Replace ambienttemperature_initial
-    
-    pattern_tamb_initial = r'real\s+ambienttemperature_initial\s*=\s*[\d.]+;'
-    replacement_tamb_initial = f'real ambienttemperature_initial = {t_amb_initial};'
-    if not re.search(pattern_tamb_initial, content):
-        raise ValueError(f"Pattern 'real ambienttemperature_initial' not found in {udf_path}")
-    content = re.sub(pattern_tamb_initial, replacement_tamb_initial, content)
-    
     # Write modified file back
     with open(udf_path, 'w') as f:
         f.write(content)
