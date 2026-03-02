@@ -35,5 +35,6 @@ initial_profile_params = {
 # These parameters can vary over time during the simulation
 profile_params = {
     "HR": [60, 180, "bpm"],             # Heart rate profile
+    "ST": [30, 40, "K"]
 }
 

@@ -45,7 +45,8 @@ SIMULATION_CONFIG = {
     "dimension": "THREE",
     "num_simulations": 1000,  # Number of simulations to run
     "case_file_general": os.path.join(PROJECT_ROOT, "cases", "general", "Case.cas.h5"),
-    "udf_file_general": os.path.join(PROJECT_ROOT, "cases", "general", "UDF_st_indep.c"),
+    "udf_file_general_st_indep": os.path.join(PROJECT_ROOT, "cases", "general_st_indep", "UDF_st_indep.c"),
+    "udf_file_general": os.path.join(PROJECT_ROOT, "cases", "general", "UDF.c"),
 }
 
 DATA_GENERATOR_CONFIG = {
