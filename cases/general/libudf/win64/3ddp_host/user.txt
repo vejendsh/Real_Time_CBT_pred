@@ -1,0 +1,6 @@
+VERSION='3ddp_host'
+FLUENT_ARCH='win64'
+FLUENT_RELEASE='fluent24.2.0'
+CSOURCES=' $(SRC)UDF.c'
+HSOURCES=''
+GPU_SUPPORT='off'

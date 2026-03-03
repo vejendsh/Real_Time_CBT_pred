@@ -9,19 +9,6 @@
 #    Format: "parameter_name": [min_value, max_value, "units"]
 # =============================================================================
 
-# =============================================================================
-# SIMULATION PARAMETERS
-# =============================================================================
-# This file contains all parameters that will be used in the simulation.
-# To customize the simulation, modify the values within the min/max ranges provided.
-#
-# PARAMETER FORMAT:
-# Each parameter is defined as: "parameter_name": [min_value, max_value, "units"]
-# You can set any value between min_value and max_value (inclusive).
-#
-# IMPORTANT: Do not change parameter names or units, only modify the values.
-# =============================================================================
-
 # Define scalar parameters for the simulation
 # These are constant values used throughout the simulation
 
@@ -36,4 +23,11 @@ initial_profile_params = {
 profile_params = {
     "HR": [60, 180, "bpm"],             # Heart rate profile
 }
+
+scalar_params = {
+    "h": [1, 50, "W/m^2/K"],
+    "T_amb": [20, 50, "C"],
+}
+
+
 

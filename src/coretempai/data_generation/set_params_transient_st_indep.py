@@ -9,7 +9,7 @@ import numpy as np
 from numpy.random import noncentral_f
 from coretempai.config import SIMULATION_CONFIG, PROFILE_CONFIG
 from coretempai.utils.utils import Fourier
-import coretempai.input_parameters.input_parameters as input_parameters
+import coretempai.input_parameters.input_parameters_st_indep as input_parameters
 
 
 def generate_profile(max_waves, duration, step_size, range, initial_range=None, initial_value=None):
@@ -219,7 +219,7 @@ def main():
     """
     Example usage of the set_transient_params function.
     """
-    udf_path = SIMULATION_CONFIG["udf_file_general"]
+    udf_path = SIMULATION_CONFIG["udf_file_general_st_indep"]
     
     # Get parameters from input_parameters module
     profile_params = input_parameters.profile_params

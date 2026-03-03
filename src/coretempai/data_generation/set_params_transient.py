@@ -44,6 +44,27 @@ def generate_profile(max_waves, duration, step_size, range, initial_range=None, 
     return profile_values
 
 
+def generate_scalar_params(scalar_params):
+    """
+    Randomly samples scalar parameters from their specified ranges.
+    
+    Args:
+        scalar_params (dict): Dictionary of parameter names and their ranges
+                             Example: {"T_amb": [20, 50, "C"], "h": [1, 10, "W/m^2/K"]}
+        
+    Returns:
+        dict: Dictionary of parameter names and their randomly sampled values
+              Example: {"T_amb": 35.5, "h": 6.2}
+    """
+    scalar_values = {}
+    for param_name, param_range in scalar_params.items():
+        min_val = param_range[0]
+        max_val = param_range[1]
+        random_value = round(np.random.uniform(min_val, max_val), 3)
+        scalar_values[param_name] = random_value
+    
+    return scalar_values
+
 def format_hr_array_c(hr_array):
     """
     Formats HR array as a C array string.
@@ -59,21 +80,6 @@ def format_hr_array_c(hr_array):
     array_size = len(hr_array)
     return f"real heartrate[{array_size}]={{{hr_values_str}}};"
 
-
-def format_st_array_c(st_array):
-    """
-    Formats ST array as a C array string.
-    
-    Args:
-        st_array (numpy.ndarray): Array of ST values
-        
-    Returns:
-        str: C array string like "real skintemp[3601]={60.5,61.2,...};"
-    """
-    # Format each value with appropriate precision
-    st_values_str = ",".join([f"{val:.4f}" for val in st_array])
-    array_size = len(st_array)
-    return f"real skintemp[{array_size}]={{{st_values_str}}};"
 
 
 def format_time_array_c(time_array):
@@ -93,17 +99,17 @@ def format_time_array_c(time_array):
     return f"real inputtime[{array_size}]={{{time_values_str}}};"
 
 
-def modify_udf_file(udf_path, hr_array, st_array, time_points):
+def modify_udf_file(udf_path, hr_array, time_points, t_amb, h_coefficient):
     """
-    Modifies UDF.c file to inject HR profile, ST array, and time points,
+    Modifies UDF.c file to inject HR profile and time points,
     Uses pattern matching instead of line numbers for robustness.
     
     Args:
         udf_path (str): Path to UDF.c file
         hr_array (numpy.ndarray): HR profile array
-        st_array (numpy.ndarray): ST profile array
         time_points (numpy.ndarray): Time points array corresponding to HR profile
-
+        t_amb (float): Ambient temperature in C
+        h_coefficient (float): Heat transfer coefficient in W/m^2/K
     Returns:
         None
     """
@@ -115,7 +121,6 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     
     # Format HR array, ST array and time array as C code
     hr_array_str = format_hr_array_c(hr_array)
-    st_array_str = format_st_array_c(st_array)
     time_array_str = format_time_array_c(time_points)
     
     
@@ -141,14 +146,22 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     # Use DOTALL flag to allow . to match newlines across multiple lines
     content = re.sub(pattern_inputtime, replacement_inputtime, content, flags=re.DOTALL)
 
-    pattern_st = r'real\s+skintemp\[\d+\]\s*=\s*\{.*?\};'
-    replacement_st = st_array_str
-    if not re.search(pattern_st, content, flags=re.DOTALL):
-        raise ValueError(f"Pattern 'real heartrate[...]' not found in {udf_path}")
-    # Use DOTALL flag to allow . to match newlines across multiple lines
-    content = re.sub(pattern_st, replacement_st, content, flags=re.DOTALL)
 
+    # Pattern 3: Replace heat transfer coefficient
+    # Matches: real heattransfercoefficient = <any_value>;
+    pattern_htc = r'real\s+heattransfercoefficient\s*=\s*[\d.]+;'
+    replacement_htc = f'real heattransfercoefficient = {h_coefficient};'
+    if not re.search(pattern_htc, content):
+        raise ValueError(f"Pattern 'real heattransfercoefficient' not found in {udf_path}")
+    content = re.sub(pattern_htc, replacement_htc, content)
 
+    # Pattern 4: Replace ambient temperature
+    # Matches: real ambienttemperature = <any_value>;
+    pattern_tamb = r'real\s+ambienttemperature\s*=\s*[\d.]+;'
+    replacement_tamb = f'real ambienttemperature = {t_amb};'
+    if not re.search(pattern_tamb, content):
+        raise ValueError(f"Pattern 'real ambienttemperature' not found in {udf_path}")
+    content = re.sub(pattern_tamb, replacement_tamb, content)
     
     # Write modified file back
     with open(udf_path, 'w') as f:
@@ -156,17 +169,19 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     
     print(f"Modified UDF file: {udf_path}")
     print(f"  - HR profile array size: {len(hr_array)}")
-    print(f"  - ST profile array size: {len(st_array)}")
     print(f"  - Time points array size: {len(time_points)}")
+    print(f"  - Heat transfer coefficient: {h_coefficient} W/m^2/K")
+    print(f"  - Ambient temperature: {t_amb} C")
 
 
-def set_transient_params(udf_path, profile_params, initial_profile_params, max_waves=5, 
+def set_transient_params(udf_path, scalar_params, profile_params, initial_profile_params, max_waves=5, 
                          duration=None, step_size=None):
     """
     Main function to generate and set transient parameters in UDF.c.
     
     Args:
         udf_path (str): Path to UDF.c file
+        scalar_params (dict): Dictionary of scalar parameter ranges
         profile_params (dict): Dictionary of profile parameter ranges
         initial_profile_params (dict): Dictionary of initial profile parameter ranges
         max_waves (int): Maximum number of Fourier waves for profiles
@@ -182,6 +197,8 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_w
     if step_size is None:
         step_size = PROFILE_CONFIG["step_size"]
     
+    # Generate scalar parameters
+    scalar_values = generate_scalar_params(scalar_params)
     
     # Generate time points (must match HR profile generation)
     time_points = np.arange(0, duration + step_size, step_size)
@@ -191,22 +208,22 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_w
     initial_hr_range = initial_profile_params.get("HR", [60, 100])  # Default range if not specified
     hr_array = generate_profile(max_waves, duration, step_size, hr_range[:2], initial_hr_range[:2])  # Get [min, max]
 
-    # Generate ST profile
-    st_range = profile_params.get("ST", [30, 40])  # Default range if not specified
-    # initial_st_range = initial_profile_params.get("ST", [30, 40])
-    st_array = generate_profile(max_waves, duration, step_size, st_range[:2], initial_value=33.5)  # Get [min, max]
     
     # Ensure time_points and hr_array have the same length
     if len(time_points) != len(hr_array):
         raise ValueError(f"Time points array length ({len(time_points)}) does not match HR array length ({len(hr_array)})")
 
+    # Extract scalar values
+    t_amb = scalar_values.get("T_amb", 25.0)  # Default if not found
+    h_coefficient = scalar_values.get("h", 5.0)  # Default if not found
+
     # Modify UDF file
-    modify_udf_file(udf_path, hr_array, st_array, time_points)
+    modify_udf_file(udf_path, hr_array, time_points, t_amb, h_coefficient)
     
     # Return generated values for logging/saving
     return {
+        "scalar_values": scalar_values,
         "hr_profile": hr_array,
-        "st_profile": st_array,
         "time_points": time_points,
         "hr_range": hr_range[:2],
         "max_waves": max_waves,
@@ -222,11 +239,13 @@ def main():
     udf_path = SIMULATION_CONFIG["udf_file_general"]
     
     # Get parameters from input_parameters module
+    scalar_params = input_parameters.scalar_params
     profile_params = input_parameters.profile_params
     initial_profile_params = input_parameters.initial_profile_params
     # Set transient parameters
     result = set_transient_params(
         udf_path=udf_path,
+        scalar_params=scalar_params,
         profile_params=profile_params,
         initial_profile_params=initial_profile_params,
         max_waves=PROFILE_CONFIG["max_freq"]
@@ -237,23 +256,15 @@ def main():
     print(f"  HR range: {result['hr_range']}")
 
     from matplotlib import pyplot as plt
-    fig, axs = plt.subplots(2, 1, figsize=(8,6), sharex=True)
-    axs[0].plot(np.arange(0, len(result['hr_profile'])) * PROFILE_CONFIG["step_size"], result['hr_profile'], label='HR profile')
-    axs[0].set_ylabel('HR (bpm)')
-    axs[0].set_ylim((profile_params.get("HR")[0], profile_params.get("HR")[1]))
+    fig, ax = plt.subplots(1, 1, figsize=(8,6), sharex=True)
+    ax.plot(np.arange(0, len(result['hr_profile'])) * PROFILE_CONFIG["step_size"], result['hr_profile'], label='HR profile')
+    ax.set_ylabel('HR (bpm)')
+    ax.set_ylim((profile_params.get("HR")[0], profile_params.get("HR")[1]))
     # axs[0].set_ylim(-200, 200)
-    axs[0].set_title('HR Profile')
-    axs[0].legend() 
-    axs[0].grid(True)
+    ax.set_title('HR Profile')
+    ax.legend() 
+    ax.grid(True)
 
-    axs[1].plot(np.arange(0, len(result['st_profile'])) * PROFILE_CONFIG["step_size"], result['st_profile'], label='ST profile')
-    axs[1].set_ylabel('ST (K)')
-    axs[1].set_xlabel('Time (s)')
-    axs[1].set_ylim((profile_params.get("ST")[0], profile_params.get("ST")[1]))
-    # axs[1].set_ylim(-200, 200)
-    axs[1].set_title('ST Profile')
-    axs[1].grid(True)
-    axs[1].legend()
     plt.tight_layout()
     plt.show()
 
