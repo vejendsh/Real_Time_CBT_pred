@@ -157,7 +157,8 @@ class Fourier(FunctionSampler):
         # num_terms = 0
         print(f"Num terms: {num_terms}")
 
-        amp_cos_low = np.random.uniform(5*num_terms, 5*num_terms+1, size=(n, 1, n_low)) 
+        # Amplitude of low frequency term (freq<1) scales with num_terms (number of high frequency terms) to make sure it doesn't become insignificant
+        amp_cos_low = np.random.uniform(5*num_terms, 5*num_terms+1, size=(n, 1, n_low))  
         amp_cos_high = np.random.uniform(0, 10, size=(n, 1, n_high)) 
         amp_sin_low = np.random.uniform(5*num_terms, 5*num_terms+1, size=(n, 1, n_low)) 
         amp_sin_high = np.random.uniform(0, 10, size=(n, 1, n_high)) 
@@ -239,7 +240,7 @@ class Fourier(FunctionSampler):
 
 def create_run_directory():
     """
-    Creates a new run directory with subdirectories for case_and_data, cbt, and profile.
+    Creates a new run directory with subdirectories for case_and_data, CT, and profile.
     
     Returns:
         str: Path to the new run directory
@@ -257,8 +258,29 @@ def create_run_directory():
     
     # Create the new run directory with subdirectories
     new_run_dir = raw_dir / f"Run_{new_n}"
-    for subdir in ["case_and_data", "output_profile", "input_profile"]:
+    for subdir in ["case_and_data", "output_params", "input_params"]:
         (new_run_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    # Define required subdirectories to create
+    input_params_subdirs = ["HR", "ST"]
+    output_params_subdirs = [
+        "blood_temp",
+        "wavg_tiss_temp",
+        "core_temp",
+        "skin_temperature",
+        "current_metabolic_rate",
+        "metab_organ",
+        "metab_muscle",
+        "perf_muscle",
+        "perf_organ"
+    ]
+
+    # Create subdirectories using a loop for input_params and output_params
+    for subdir in input_params_subdirs:
+        (new_run_dir / "input_params" / subdir).mkdir(parents=True, exist_ok=True)
+    for subdir in output_params_subdirs:
+        (new_run_dir / "output_params" / subdir).mkdir(parents=True, exist_ok=True)
+
     
     print(f"Created new run directory: {new_run_dir}")
     return new_run_dir, new_n

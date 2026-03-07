@@ -7,10 +7,6 @@ import sys
 import os
 from pathlib import Path
 
-# Add the project root directory to the Python path
-project_root = Path(__file__).parent.parent.parent
-sys.path.append(str(project_root))
-
 # Importing necessary libraries
 import ansys.fluent.core as pyfluent  # Python API for Ansys Fluent
 import time  # For timing operations

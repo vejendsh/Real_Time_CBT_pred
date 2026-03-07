@@ -17,14 +17,13 @@ DIRECTORIES = {
     "raw": os.path.join(PROJECT_ROOT, "data", "raw"),
     "root": PROJECT_ROOT,
     "case": os.path.join(PROJECT_ROOT, "cases", "general"),
+    "case_st_indep": os.path.join(PROJECT_ROOT, "cases", "general_st_indep"),
 }
 
 # File paths configuration
 FILES = {
     "case_file": os.path.join(DIRECTORIES["case"], "Case.cas.h5"),
-    # Uncomment to enable journal files
-    # "params_journal": os.path.join(DIRECTORIES["case"], "journals", "params.log"),
-    # "run_journal": os.path.join(DIRECTORIES["case"], "journals", "run.log"),
+    "case_file_st_indep": os.path.join(DIRECTORIES["case_st_indep"], "Case_st_indep.cas.h5"),
 }
 
 # Profile generation settings
@@ -49,9 +48,6 @@ SIMULATION_CONFIG = {
     "udf_file_general": os.path.join(PROJECT_ROOT, "cases", "general", "UDF.c"),
 }
 
-DATA_GENERATOR_CONFIG = {
-    "num_data": 10,  # Number of data points to be generated
-}
 
 # Neural Operator Configuration
 class NeuralOperatorConfig:
