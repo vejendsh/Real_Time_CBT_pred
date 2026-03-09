@@ -4,6 +4,7 @@ The case parameters are defined in the utils.parameters file.
 """
 
 import os
+import shutil
 
 # Importing necessary libraries
 import time  # For timing operations
@@ -57,19 +58,44 @@ def generate_data(num_sims=SIMULATION_CONFIG["num_simulations"], case_file_path=
         # Run case
         run_case(working_directory_path, output_file_path, case_file_path)
 
+        # Give the solver time to release .out file handles (avoids WinError 32 on Windows)
+        time.sleep(2)
+
         # Move each .out file into its respective subdirectory in output_params directory
         for file in os.listdir(working_directory_path):
             if not file.endswith(".out") or "-rfile" not in file:
                 continue
+            src_path = os.path.join(working_directory_path, file)
             subdir = file.split("-rfile")[0]
             dest_dir = os.path.join(run_dir, "output_params", subdir)
             name, ext = os.path.splitext(file)
             dest_path = os.path.join(dest_dir, f"iter{i}{ext}")
-            os.rename(os.path.join(working_directory_path, file), dest_path)
-        
-        # Rename core_temp dir as CT
-        os.rename(os.path.join(run_dir, "output_params", "core_temp"), os.path.join(run_dir, "output_params", "CT"))
+            # os.rename(os.path.join(working_directory_path, file), dest_path)
+            os.makedirs(dest_dir, exist_ok=True)
+            # Copy then remove avoids "file in use" on Windows if rename fails
+            for attempt in range(5):
+                try:
+                    shutil.copy2(src_path, dest_path)
+                    os.remove(src_path)
+                    break
+                except PermissionError:
+                    if attempt < 4:
+                        time.sleep(1)
+                    else:
+                        raise
 
+
+        steady_state_CT = 37.2969477485438
+        # Add steady state CT as first entry in CT/iter{i}.txt file
+        with open(os.path.join(run_dir, "output_params", "core_temp", f"iter{i}.out"), "r") as f:
+            lines = f.readlines()
+        lines.insert(3, f"0 {steady_state_CT} 0\n") 
+        with open(os.path.join(run_dir, "output_params", "core_temp", f"iter{i}.out"), "w") as f:
+            f.writelines(lines)
+
+    # Rename core_temp dir as CT
+    os.rename(os.path.join(run_dir, "output_params", "core_temp"), os.path.join(run_dir, "output_params", "CT"))
+    
 
 if __name__ == "__main__":
     # Start timing the execution

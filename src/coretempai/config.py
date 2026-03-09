@@ -30,7 +30,7 @@ FILES = {
 PROFILE_CONFIG = {
     "step_size": 2,   # Step size in seconds (2 seconds)
     "profile_duration": 7200,  # Duration in seconds (2 hours)
-    "max_freq": 26,  # Maximum number of Fourier waves for HR profile
+    "max_freq": 6,  # Maximum number of Fourier waves for HR profile
     "scale_factor": 0.6,
     "margin": 0.95,
     "mean_margin": 0.25,

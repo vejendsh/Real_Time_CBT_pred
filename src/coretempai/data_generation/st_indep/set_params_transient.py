@@ -216,7 +216,7 @@ def apply_skintemp_from_rfile(rfile_path, udf_path, initial_skintemp=33.5):
     return {"skintemp": skintemp, "inputtime": inputtime, "n_points": n}
 
 
-def modify_udf_file(udf_path, hr_array, st_array, time_points):
+def modify_udf_file(udf_path, hr_array, st_array, input_time):
     """
     Modifies UDF.c file to inject HR profile, ST array, and time points,
     Uses pattern matching instead of line numbers for robustness.
@@ -225,7 +225,7 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
         udf_path (str): Path to UDF.c file
         hr_array (numpy.ndarray): HR profile array
         st_array (numpy.ndarray): ST profile array
-        time_points (numpy.ndarray): Time points array corresponding to HR profile
+        input_time (numpy.ndarray): Time points array corresponding to HR profile
 
     Returns:
         None
@@ -239,7 +239,7 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     # Format HR array, ST array and time array as C code
     hr_array_str = format_hr_array_c(hr_array)
     st_array_str = format_st_array_c(st_array)
-    time_array_str = format_time_array_c(time_points)
+    time_array_str = format_time_array_c(input_time)
     
     
     # Pattern 1: Replace HR array
@@ -281,7 +281,7 @@ def modify_udf_file(udf_path, hr_array, st_array, time_points):
     print(f"Modified UDF file: {udf_path}")
     print(f"  - HR profile array size: {len(hr_array)}")
     print(f"  - ST profile array size: {len(st_array)}")
-    print(f"  - Time points array size: {len(time_points)}")
+    print(f"  - Input time array size: {len(input_time)}")
 
 
 def set_transient_params(udf_path, profile_params, initial_profile_params, max_freq=PROFILE_CONFIG["max_freq"], 
@@ -302,7 +302,7 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_f
     """
     
     # Generate time points (must match HR profile generation)
-    time_points = np.arange(0, duration + step_size, step_size)
+    input_time = np.arange(0, duration + step_size, step_size)
     
     # Generate HR profile
     hr_range = profile_params.get("HR", [60, 120])  # Default range if not specified
@@ -316,17 +316,17 @@ def set_transient_params(udf_path, profile_params, initial_profile_params, max_f
     st_array = np.insert(st_array, 0, 33.500) # Initial skin temperature is always 33.5 C
     
     # Ensure time_points and hr_array have the same length
-    if len(time_points) != len(hr_array):
-        raise ValueError(f"Time points array length ({len(time_points)}) does not match HR array length ({len(hr_array)})")
+    if len(input_time) != len(hr_array):
+        raise ValueError(f"Input time array length ({len(input_time)}) does not match HR array length ({len(hr_array)})")
 
     # Modify UDF file
-    modify_udf_file(udf_path, hr_array, st_array, time_points)
+    modify_udf_file(udf_path, hr_array, st_array, input_time)
     
     # Return generated values for logging/saving
     return {
         "hr_profile": hr_array,
         "st_profile": st_array,
-        "time_points": time_points,
+        "input_time": input_time,
         "hr_range": hr_range[:2],
         "max_freq": max_freq,
         "duration": duration,
