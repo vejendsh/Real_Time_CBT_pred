@@ -1,5 +1,0 @@
-CSOURCES= $(SRC)UDF_st_indep.c
-HSOURCES=
-VERSION=3ddp_host
-PARALLEL_NODE=none
-GPU_SUPPORT=off

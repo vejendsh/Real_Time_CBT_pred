@@ -24,3 +24,8 @@ validation/
 
 exercise/
 general/
+
+libudf/
+
+# trn files
+*.trn
