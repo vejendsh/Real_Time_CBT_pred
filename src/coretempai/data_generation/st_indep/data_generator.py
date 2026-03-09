@@ -59,7 +59,7 @@ def generate_data(num_sims=SIMULATION_CONFIG["num_simulations"], case_file_path=
         run_case(working_directory_path, output_file_path, case_file_path)
 
         # Give the solver time to release .out file handles (avoids WinError 32 on Windows)
-        time.sleep(2)
+        time.sleep(5)
 
         # Move each .out file into its respective subdirectory in output_params directory
         for file in os.listdir(working_directory_path):
@@ -73,16 +73,22 @@ def generate_data(num_sims=SIMULATION_CONFIG["num_simulations"], case_file_path=
             # os.rename(os.path.join(working_directory_path, file), dest_path)
             os.makedirs(dest_dir, exist_ok=True)
             # Copy then remove avoids "file in use" on Windows if rename fails
-            for attempt in range(5):
+            # We retry deletion for a while to ensure the original is removed.
+            for attempt in range(30):
                 try:
                     shutil.copy2(src_path, dest_path)
                     os.remove(src_path)
                     break
-                except PermissionError:
-                    if attempt < 4:
+                except PermissionError as e:
+                    # On Windows, Fluent or another process may still have the file open.
+                    # Retry for up to ~30 seconds, then fail loudly rather than leaving the file.
+                    if attempt < 29:
                         time.sleep(1)
                     else:
-                        raise
+                        raise PermissionError(
+                            f"Could not delete source file after 30 attempts "
+                            f"(file appears to remain in use): {src_path}"
+                        ) from e
 
 
         steady_state_CT = 37.2969477485438

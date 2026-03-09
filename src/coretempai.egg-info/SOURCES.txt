@@ -1,4 +1,5 @@
 LICENSE
+README.md
 setup.py
 src/coretempai/__init__.py
 src/coretempai/config.py
@@ -16,12 +17,12 @@ src/coretempai/data_generation/data_generator.py
 src/coretempai/data_generation/run_case.py
 src/coretempai/data_generation/set_params.py
 src/coretempai/data_generation/set_params_transient.py
-src/coretempai/data_generation/transient_data_generator.py
 src/coretempai/data_preprocessing/__init__.py
 src/coretempai/data_preprocessing/data_preprocessor.py
 src/coretempai/data_preprocessing/model_processor.py
 src/coretempai/input_parameters/__init__.py
 src/coretempai/input_parameters/input_parameters.py
+src/coretempai/input_parameters/input_parameters_st_indep.py
 src/coretempai/model/__init__.py
 src/coretempai/model/neural_network_model.py
 src/coretempai/model/neural_operator_model.py

@@ -29,3 +29,5 @@ libudf/
 
 # trn files
 *.trn
+
+build/
